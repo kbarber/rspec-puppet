@@ -68,6 +68,25 @@ module RSpec::Puppet
         else
           "class { '#{class_name}': #{param_str} }"
         end
+      elsif type == :application
+        nodes_mapping = nil
+        if self.respond_to? :nodes
+          nodes_arr = nodes.map do |k,v|
+            "#{k} => #{v}"
+          end
+          nodes_mapping = nodes_arr.join(", ")
+        else
+          raise "No nodes block defined"
+        end
+        if self.respond_to? :params
+          "site { " +
+          "  #{class_name} { '#{title}': nodes => { #{nodes_mapping} }, #{param_str} }" +
+          "}"
+        else
+          "site { " +
+          "  #{class_name} { '#{title}': nodes => { #{nodes_mapping} } }" +
+          "}"
+        end
       elsif type == :define
         if self.respond_to? :params
           "#{class_name} { '#{title}': #{param_str} }"
@@ -81,7 +100,7 @@ module RSpec::Puppet
 
     def nodename(type)
       return node if self.respond_to?(:node)
-      if [:class, :define, :function].include? type
+      if [:class, :define, :function, :application].include? type
         Puppet[:certname]
       else
         class_name
